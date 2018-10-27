@@ -87,7 +87,7 @@ class AnimalCard extends React.Component {
 	}
 
 	render() {
-		const { history, location, match, textcase } = this.props;
+		const { location } = this.props;
 		const urlParams = new URLSearchParams(location.search);
 		const name = urlParams.get('name');
 
