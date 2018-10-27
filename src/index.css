@@ -186,3 +186,20 @@ body, .app {
   cursor: pointer;
   outline: none;
 }
+
+#animal-card table {
+	position: relative;
+	left: 20px;
+	border-spacing: 10px;
+    border-collapse: separate;
+}
+
+#animal-card td {
+	position: relative;
+	left: 20px;
+}
+
+#animal-nav button {
+	position: relative;
+	left: 20px;
+}

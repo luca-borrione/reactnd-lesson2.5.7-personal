@@ -1,12 +1,6 @@
 import React from 'react'
 import { Route, Link } from 'react-router-dom'
 
-const PropsRoute = ({component, path, ...otherProps}) => (
-	<Route {...otherProps} path={path} render={routeProps => 
-		React.createElement(component, {...otherProps, ...routeProps})
-	  } />
-  ) 
-
 const animalsRecord = [
 	{
 		name: 'tiger',
@@ -60,45 +54,83 @@ const animalsRecord = [
 	}
 ];
 
-function AnimalCard (props) {
-	const { history, location, match, recursive } = props;
-	const urlParams = new URLSearchParams(location.search);
-	const name = urlParams.get('name');
+const strToCase = (str, textcase) => {
+	switch (textcase) {
+			
+		case 'upper':
+			return str.toUpperCase();
 
-	const animal = animalsRecord.find( entry =>
-		entry.name === name
-	);
+		case 'lower':
+			return str.toLowerCase();
 
-	return (
-		<div>
-			<table style={{position:'relative',left:20}}>
-				<tbody>
-					<tr>
-						<td>name:</td>
-						<td>{animal.name}</td>
-					</tr>
-					<tr>
-						<td>class:</td>
-						<td>{animal.class}</td>
-					</tr>
-					<tr>
-						<td>conservation status:</td>
-						<td>{animal.status}</td>
-					</tr>
-				</tbody>
-			</table>
-			<hr />
-		</div>
-	);
+		default:
+			console.error('unexpected textcase: ', textcase);
+			break;
+
+	}
+};
+
+const PropsRoute = ({component, path, ...otherProps}) => (
+	<Route {...otherProps} path={path} render={routeProps => 
+		React.createElement(component, {...otherProps, ...routeProps})
+		} />
+);
+
+class AnimalCard extends React.Component {
+	constructor(props) {
+		super(props);
+		this.print = this.print.bind(this);
+	}
+
+	print(str) {
+		return strToCase(str, this.props.textcase);
+	}
+
+	render() {
+		const { history, location, match, textcase } = this.props;
+		const urlParams = new URLSearchParams(location.search);
+		const name = urlParams.get('name');
+
+		const animal = animalsRecord.find( entry =>
+			entry.name === name
+		);
+
+		return (
+			<div id="animal-card">
+				<table>
+					<tbody>
+						<tr>
+							<td>{this.print('name:')}</td>
+							<td>{this.print(animal.name)}</td>
+						</tr>
+						<tr>
+							<td>{this.print('class:')}</td>
+							<td>{this.print(animal.class)}</td>
+						</tr>
+						<tr>
+							<td>{this.print('status:')}</td>
+							<td>{this.print(animal.status)}</td>
+						</tr>
+					</tbody>
+				</table>
+				<hr />
+			</div>
+		);
+	}
 }
 
 class AnimalList extends React.Component {
 	constructor(props) {
-		super(props)
+		super(props);
+		this.print = this.print.bind(this);
+	}
+
+	print(str) {
+		return strToCase(str, this.props.textcase);
 	}
 
 	render() {
-		const { history, location, match, recursive } = this.props;
+		const { location, match, textcase } = this.props;
 
 		const urlParams = new URLSearchParams(location.search);
 		const groupBy	= urlParams.get('groupBy');
@@ -128,13 +160,13 @@ class AnimalList extends React.Component {
 										pathname: match.url+'/name',
 										search: search
 									}}
-									>{animal.name}</Link>
+									>{this.print(animal.name)}</Link>
 							</li>
 						);
 					})}
 				</ul>
 				<hr />
-				<Route path={`${match.path}/name`} component={AnimalCard} />
+				<PropsRoute path={`${match.path}/name`} component={AnimalCard} textcase={textcase} />
 			</div>
 		);
 	}
@@ -144,10 +176,16 @@ class AnimalList extends React.Component {
 class AnimalGroup extends React.Component {
 	constructor(props) {
 		super(props);
+		this.print = this.print.bind(this);
+	}
+	
+	print(str) {
+		return strToCase(str, this.props.textcase);
 	}
 
 	render() {
-		const { history, location, match, recursive } = this.props;
+		const { location, match, textcase } = this.props;
+
 		const urlParams = new URLSearchParams(location.search);
 		const groupBy = urlParams.get('groupBy');
 
@@ -166,20 +204,16 @@ class AnimalGroup extends React.Component {
 									pathname: match.url+'/filter',
 									search: urlParams.toString()+'&filterBy='+group
 								}}
-								>{group}</Link>
+								>{this.print(group)}</Link>
 						</li>
 					))}
 				</ul>
 				<hr />
-				<Route path={`${match.path}/filter`} component={AnimalList} />
+				<PropsRoute path={`${match.path}/filter`} component={AnimalList} textcase={textcase} />
 			</div>
 		);
 	}
 }
-
-// <PropsRoute path="/items/red" component={Items} colour='red' />
-// <PropsRoute path="/items/blue" component={Items} colour='blue' />
-
 
 class AnimalNav extends React.Component {
 	constructor(props) {
@@ -192,12 +226,11 @@ class AnimalNav extends React.Component {
 	}
 
 	render() {
-		const { history, location, match, recursive } = this.props;
-
+		const { match, textcase } = this.props;
 		return (
-			<div>
-				<Route path="/animal/list" component={AnimalList} />
-				<Route path="/animal/group" component={AnimalGroup} />
+			<div id="animal-nav">
+				<PropsRoute path={`${match.path}/list`} component={AnimalList} textcase={textcase} />
+				<PropsRoute path={`${match.path}/group`} component={AnimalGroup} textcase={textcase} />
 				<br />
 				<button onClick={this.startOver}>Back</button>
 			</div>
@@ -206,31 +239,79 @@ class AnimalNav extends React.Component {
 }
 
 class App extends React.Component {
+
+	constructor(props) {
+		super(props);
+		this.setCase = this.setCase.bind(this);
+		this.print = this.print.bind(this);
+	}
+
+	state = {
+		textcase: 'lower'
+	};
+
+	setCase(event) {
+		this.setState({
+			textcase: event.target.value
+		});
+	}
+
+	print(str) {
+		return strToCase(str, this.state.textcase);
+	}
+
 	render() {
+		const { textcase } = this.state;
+
 		return (
 			<div>
-				<Route path="/animal" component={AnimalNav} />
+				<PropsRoute path="/nav" component={AnimalNav} textcase={this.state.textcase} />
 				<Route exact path='/' render={() => (
-					<ul>
-						<li>
-							<Link
-								to={{
-									pathname: '/animal/group',
-									search: '?groupBy=class'
-								}}
-								>Show Animal Classes</Link></li>
+					<div>
+						<form>
+							<fieldset>
+								<legend>Select a case</legend>
+						
+								<div>
+									<input type="radio" id="upper"
+										name="textcase" value="upper"
+										checked={textcase === 'upper'}
+										onChange={this.setCase} />
+									<label htmlFor="huey">UPPER</label>
+								</div>
+						
+								<div>
+									<input type="radio" id="lower"
+										name="textcase" value="lower"
+										checked={textcase === 'lower'}
+										onChange={this.setCase} />
+									<label htmlFor="dewey">lower</label>
+								</div>
+						
+							</fieldset>
+						</form>
+						<ul>
+							<li>
+								<Link
+									to={{
+										pathname: '/nav/group',
+										search: '?groupBy=class'
+									}}
+									>{this.print('show animal classes')}</Link></li>
 
-						<li>
-							<Link
-								to={{
-									pathname: '/animal/group',
-									search: '?groupBy=status'
-								}}
-								>Show Conservation Status</Link></li>
+							<li>
+								<Link
+									to={{
+										pathname: '/nav/group',
+										search: '?groupBy=status'
+									}}
+									>{this.print('show conservation status')}</Link></li>
 
-						<li>
-							<Link to='/animal/list'>Show All Animals</Link></li>
-					</ul>
+							<li>
+								<Link to='/nav/list'>
+									{this.print('show all animals')}</Link></li>
+						</ul>
+					</div>
 				)} />
 			</div>
 		)
