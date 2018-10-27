@@ -1,140 +1,236 @@
-import React, { Component } from 'react'
-import ListContacts from './ListContacts'
-import * as ContactsAPI from './utils/ContactsAPI'
-import CreateContact from './CreateContact'
+import React from 'react'
 import { Route, Link } from 'react-router-dom'
 
-class App1 extends Component {
-  state = {
-    contacts: []
-  }
-  componentDidMount() {
-    ContactsAPI.getAll()
-      .then((contacts) => {
-        this.setState(() => ({
-          contacts
-        }))
-      })
-  }
-  removeContact = (contact) => {
-    this.setState((currentState) => ({
-      contacts: currentState.contacts.filter((c) => {
-        return c.id !== contact.id
-      })
-    }))
+const PropsRoute = ({component, path, ...otherProps}) => (
+	<Route {...otherProps} path={path} render={routeProps => 
+		React.createElement(component, {...otherProps, ...routeProps})
+	  } />
+  ) 
 
-    ContactsAPI.remove(contact)
-  }
-  createContact = (contact) => {
-    ContactsAPI.create(contact)
-      .then((contact) => {
-        this.setState((currentState) => ({
-          contacts: currentState.contacts.concat([contact])
-        }))
-      })
-  }
-  render() {
-    // return (
-    //   <div>
-    //     <Route exact path='/' render={() => (
-    //       <ListContacts
-    //         contacts={this.state.contacts}
-    //         onDeleteContact={this.removeContact}
-    //       />
-    //     )} />
-    //     <Route path='/create' render={({ history }) => (
-    //       <CreateContact
-    //         onCreateContact={(contact) => {
-    //           this.createContact(contact)
-    //           history.push('/')
-    //         }}
-    //       />
-    //     )} />
-    //   </div>
-	// )
-	return (
-		<div>
-			<Route path='/items' component={Items} />
-			<Link to='/items'>TEST</Link>
-		</div>
-	)
-  }
-}
-
-
-const items = [
+const animalsRecord = [
 	{
-		name: 'Link Component Usage',
-		id: 'link'
+		name: 'tiger',
+		class: 'mammal',
+		status: 'endangered'
 	},
 	{
-		name: 'Route Component Usage',
-		id: 'route'
+		name: 'mule',
+		class: 'mammal',
+		status: 'least concern'
 	},
+	{
+		name: 'dingo',
+		class: 'mammal',
+		status: 'threatened'
+	},
+	{
+		name: 'linx',
+		class: 'mammal',
+		status: 'least concern'
+	},
+	{
+		name: 'dolphin',
+		class: 'mammal',
+		status: 'threatened'
+	},
+	{
+		name: 'whale shark',
+		class: 'fish',
+		status: 'threatened'
+	},
+	{
+		name: 'cathfish',
+		class: 'fish',
+		status: 'threatened'
+	},
+	{
+		name: 'iguana',
+		class: 'reptile',
+		status: 'threatened'
+	},
+	{
+		name: 'sea turtle',
+		class: 'reptile',
+		status: 'endangered'
+	},
+	{
+		name: 'caiman',
+		class: 'reptile',
+		status: 'least concern'
+	}
 ];
 
-function Item ({ match }) {
-	console.log(match.path); // prints "/items/:itemId"
-	console.log(match.url); // 	prints "/items/route"
+function AnimalCard (props) {
+	const { history, location, match, recursive } = props;
+	const urlParams = new URLSearchParams(location.search);
+	const name = urlParams.get('name');
 
-	const itemId = match.url.substr(match.url.lastIndexOf('/')+1);
-	return (
-		<p>Item: {itemId}</p>
+	const animal = animalsRecord.find( entry =>
+		entry.name === name
 	);
-}
 
-
-function Items ({ match }) {
 	return (
 		<div>
-			<Link to={`${match.url}/id`}>LINK TEXT</Link>
-			<Route path={`${match.path}/:itemId`} component={Item} />
+			<table style={{position:'relative',left:20}}>
+				<tbody>
+					<tr>
+						<td>name:</td>
+						<td>{animal.name}</td>
+					</tr>
+					<tr>
+						<td>class:</td>
+						<td>{animal.class}</td>
+					</tr>
+					<tr>
+						<td>conservation status:</td>
+						<td>{animal.status}</td>
+					</tr>
+				</tbody>
+			</table>
+			<hr />
 		</div>
 	);
 }
 
-
-const items = [
-	{
-		name: 'Link Component Usage',
-		id: 'link'
-	},
-	{
-		name: 'Route Component Usage',
-		id: 'route'
-	},
-];
-
-function Items ({ match }) {
-	return (
-		<div>
-			<ul>
-				{items.map(({ name, id }) => (
-					<li key={id}>
-						<Link to={`${match.url}/${id}`}>{name}</Link>
-					</li>
-				))}
-			</ul>
-
-			<Route path={`${match.path}/:itemId`} component={Item} />
-		</div>
-	);
-}
-
-class Test extends React.Component {
-
+class AnimalList extends React.Component {
 	constructor(props) {
-		super(props);
-		console.log(Route);
+		super(props)
 	}
 
 	render() {
-		console.log(Route);
+		const { history, location, match, recursive } = this.props;
+
+		const urlParams = new URLSearchParams(location.search);
+		const groupBy	= urlParams.get('groupBy');
+		const filterBy	= urlParams.get('filterBy');
+
+		let animals;
+		if (filterBy) {
+			animals = animalsRecord.filter( animal =>
+				animal[groupBy] === filterBy
+			);
+		} else {
+			animals = animalsRecord.slice(0);
+		}
+
+		urlParams.delete('name');
 		return (
 			<div>
-				<Route path='/items' component={Items} />
+				<ul>
+					{animals.map((animal, index) => {
+						urlParams.append('name', animal.name);
+						const search = urlParams.toString();
+						urlParams.delete('name');
+						return (
+							<li key={index}>
+								<Link
+									to={{
+										pathname: match.url+'/name',
+										search: search
+									}}
+									>{animal.name}</Link>
+							</li>
+						);
+					})}
+				</ul>
+				<hr />
+				<Route path={`${match.path}/name`} component={AnimalCard} />
+			</div>
+		);
+	}
+}
+
+
+class AnimalGroup extends React.Component {
+	constructor(props) {
+		super(props);
+	}
+
+	render() {
+		const { history, location, match, recursive } = this.props;
+		const urlParams = new URLSearchParams(location.search);
+		const groupBy = urlParams.get('groupBy');
+
+		const groups = [
+			...new Set(animalsRecord.map( animal => animal[groupBy] ))
+		];
+
+		urlParams.delete('filterBy');
+		return (
+			<div>
+				<ul>
+					{groups.map((group, index) => (
+						<li key={index}>
+							<Link
+								to={{
+									pathname: match.url+'/filter',
+									search: urlParams.toString()+'&filterBy='+group
+								}}
+								>{group}</Link>
+						</li>
+					))}
+				</ul>
+				<hr />
+				<Route path={`${match.path}/filter`} component={AnimalList} />
+			</div>
+		);
+	}
+}
+
+// <PropsRoute path="/items/red" component={Items} colour='red' />
+// <PropsRoute path="/items/blue" component={Items} colour='blue' />
+
+
+class AnimalNav extends React.Component {
+	constructor(props) {
+		super(props);
+		this.startOver = this.startOver.bind(this);
+	}
+
+	startOver() {
+		this.props.history.push('/');
+	}
+
+	render() {
+		const { history, location, match, recursive } = this.props;
+
+		return (
+			<div>
+				<Route path="/animal/list" component={AnimalList} />
+				<Route path="/animal/group" component={AnimalGroup} />
+				<br />
+				<button onClick={this.startOver}>Back</button>
+			</div>
+		);
+	}
+}
+
+class App extends React.Component {
+	render() {
+		return (
+			<div>
+				<Route path="/animal" component={AnimalNav} />
 				<Route exact path='/' render={() => (
-					<Link to='/items'>SHOW ITEMS</Link>
+					<ul>
+						<li>
+							<Link
+								to={{
+									pathname: '/animal/group',
+									search: '?groupBy=class'
+								}}
+								>Show Animal Classes</Link></li>
+
+						<li>
+							<Link
+								to={{
+									pathname: '/animal/group',
+									search: '?groupBy=status'
+								}}
+								>Show Conservation Status</Link></li>
+
+						<li>
+							<Link to='/animal/list'>Show All Animals</Link></li>
+					</ul>
 				)} />
 			</div>
 		)
@@ -142,6 +238,4 @@ class Test extends React.Component {
 
 }
 
-
-
-export default Test
+export default App
